@@ -1,0 +1,39 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1627892869,
+        "narHash": "sha256-Fg0KPi9oGTZ7Ju7rb8foq0GOZI3++ZaF6wf10ClMA58=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "d4590d21006387dcb190c516724cb1e41c0f8fdf",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "ref": "nixos-21.05",
+        "type": "indirect"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "sbws-src": "sbws-src"
+      }
+    },
+    "sbws-src": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-AlQfNeXTjX/4sCunH8c2IOapcfBWzch8b9UWc5btAJU=",
+        "type": "tarball",
+        "url": "https://gitlab.torproject.org/tpo/network-health/sbws/-/archive/v1.2.0/sbws-v1.2.0.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://gitlab.torproject.org/tpo/network-health/sbws/-/archive/v1.2.0/sbws-v1.2.0.tar.gz"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

@@ -16,11 +16,7 @@
   };
 
   outputs = { self, nixpkgs, sbws-src, flake-utils }@inputs:
-    flake-utils.lib.eachDefaultSystem (system:
     let
-      pkgs = import nixpkgs {
-				inherit system;
-			};
                     
       python = "python39";
 
@@ -32,73 +28,118 @@
           nixpkgs.lib.genAttrs
             [ "sbws" ]
             (n: generateVersion inputs."${n}-src".lastModifiedDate);
-      # sbws-version = "v1.5.2";
 
-      sbws = pkgs.python3Packages.buildPythonPackage rec {
-        name = "sbws-${versions.sbws}";
+      local_overlay = final: prev: rec {
+        sbws = final.python3Packages.buildPythonPackage rec {
+          name = "sbws-${versions.sbws}";
 
-        src = sbws-src;
+          src = sbws-src;
 
-        # checkInputs = [ pkgs.python3Packages.pytestCheckHook
-        #                 pkgs.python3Packages.tox 
-        #                 pkgs.python3Packages.pytest
-        #                 pkgs.python3Packages.black
-        #                 pkgs.python3Packages.isort
-        #                 pkgs.python3Packages.flake8
-        #                 pkgs.python3Packages.flake8-docstrings
-        #                 pkgs.python3Packages.codespell
-        #                 pkgs.python3Packages.coverage
-        #                 pkgs.python3Packages.stats
-        #                 pkgs.python3Packages.bandit
-        #                 pkgs.python3Packages.doclinks
-        #                 pkgs.python3Packages.bandit];
-        # checkPhase =
-        #        ''
-        #        tox
-        #        '';
-        checkInputs = [ pkgs.python3Packages.pytestCheckHook
-                        pkgs.python3Packages.pytest
-                        pkgs.python3Packages.pytest-mock ];
-        pytestFlagsArray = [ "tests/unit/" ];
+          checkInputs = [ final.python3Packages.pytestCheckHook
+                          final.python3Packages.pytest
+                          final.python3Packages.pytest-mock ];
+          pytestFlagsArray = [ "tests/unit/" ];
 
-        buildInputs =  [
-          pkgs.python3Packages.versioneer
-          pkgs.python3Packages.freezegun
-          pkgs.python3Packages.psutil ];
-        propagatedBuildInputs = [
-          pkgs.python3Packages.stem
-          pkgs.python3Packages.requests ];
+          buildInputs =  [
+            final.python3Packages.versioneer
+            final.python3Packages.freezegun
+            final.python3Packages.psutil ];
+          propagatedBuildInputs = [
+            final.python3Packages.stem
+            final.python3Packages.requests ];
 
-        meta = {
-          pkgs.lib.homepage = "https://tpo.pages.torproject.net/network-health/sbws/";
-          pkgs.lib.description = "A Tor bandwidth scanner that generates bandwidth files to be used by Directory Authorities.";
+          meta = {
+            final.lib.homepage = "https://tpo.pages.torproject.net/network-health/sbws/";
+            final.lib.description = "A Tor bandwidth scanner that generates bandwidth files to be used by Directory Authorities.";
+          };
         };
-      };
-    in
-    {
 
+        default = sbws;
+      };
+
+      pkgsForSystem = system: import nixpkgs {
+        # if you have additional overlays, you may add them here
+        overlays = [
+          local_overlay # this should expose devShell
+        ];
+        inherit system;
+      };
+    in flake-utils.lib.eachDefaultSystem (system: rec {
+
+      legacyPackages = pkgsForSystem system;
+      
       # Provide some binary packages for selected system types.
       packages = flake-utils.lib.flattenTree {
-        default = sbws;
-        sbws = sbws;
+        default = legacyPackages.default;
+        sbws = legacyPackages.sbws;
       };
 
       # Default shell
-      devShells.default = pkgs.mkShell {
+      devShells.default = legacyPackages.mkShell {
         buildInputs = [
-          sbws
+          packages.default
         ];
-        # (pkgs.python39.withPackages (p: with p; [ chipwhisperer ]))
       };
-
     }) // {
       overlays = {
-        default = final: prev: {
-          inherit (self.packages) sbws;
-        };
-        all = final: prev: {
-          inherit (self.packages) sbws;
-        };
+        default = final: prev: local_overlay.default;
+        all = final: prev: local_overlay.sbws;
+      };
+      
+      nixosModules.sbws = import ./module.nix;
+      
+      nixosConfigurations.sbws = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [ ({ pkgs, lib, packages, ... }: {
+          imports = [ self.nixosModules.sbws ];
+          boot.isContainer = true;
+
+          networking.useDHCP = false;
+          networking.hostName = "sbws";
+          time.timeZone = "Etc/UTC";
+          system.stateVersion = "22.05";
+
+          users.users.user = {
+            isNormalUser  = true;
+            home  = "/home/user";
+            description  = "Test user";
+            extraGroups  = [ "wheel" ];
+            password = "12345";
+          };
+
+          environment.systemPackages = [ self.packages.x86_64-linux.sbws ];
+          nixpkgs.overlays = [ local_overlay ];
+          
+          services.sbws = {
+            enable = true;
+            general = {
+              data_period = 12;
+              reset_bw_ipv4_changes = true;
+            };
+            relayprioritizer = {
+              measure_authorities = false;
+            };
+            destinations = {
+              server1 = {
+                country = "BE";
+                enable = true;
+                url = "https://nixos.org/manual/nix/stable/expressions/language-constructs.html";
+              };
+              server2 = {
+                country = "BE";
+                enable = true;
+                url = "https://nixos.org/manual/nixpkgs/stable";
+              };
+            };
+            scanner = {
+              country = "BE";
+              nickname = "scanny";
+            };
+            logging = {
+              level="debug";
+            };
+          };
+        })];
       };
     };
 }

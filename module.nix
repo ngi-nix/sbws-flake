@@ -1,17 +1,8 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.services.sbws;
-  # config_format = pkgs.formats.ini { };
-  # sbws_config = config_format.generate "sbws-config" ({
-  #   enable = cfg.sbws.enable;
-  #   general = {
-  #     data_period = cfg.sbws.general.data_period;
-  #     http_timeout = cfg.sbws.general.http_timeout;
-  #     circuit_timeout = cfg.sbws.general.circuit_timeout;
-  #     reset_bw_ipv4_changes = cfg.sbws.general.reset_bw_ipv4_changes;
-  #   };
-  # });
-
+  # packages = self.packages.${pkgs.system};
+  
   config_file = pkgs.writeText "sbws.ini" (lib.generators.toINI {} ({
     general = {
       data_period = cfg.general.data_period;
@@ -29,7 +20,6 @@ let
       min_relays = cfg.relayprioritizer.min_relays;
     };
 
-
     logging = {
       to_file = if cfg.logging.to_file then "on" else "off";
       to_stdout = if cfg.logging.to_stdout then "on" else "off";
@@ -38,7 +28,7 @@ let
       to_file_num_backups = cfg.logging.to_file_num_backups;
       level = cfg.logging.level;
       to_file_level = cfg.logging.to_file_level;
-      to_stdout_level = cfg.logging.to_syslog_level;
+      to_stdout_level = cfg.logging.to_stdout_level;
       to_syslog_level = cfg.logging.to_syslog_level;
       format = cfg.logging.format;
       to_file_format = cfg.logging.to_file_format;
@@ -55,7 +45,7 @@ let
   
   log_levels = ["debug" "info" "warning" "error" "critical"];
 
-  sbws_path = with pkgs; [ sbws ];
+  # sbws_path = with pkgs; [ sbws ];
 in {
   options = {
     services.sbws = {
@@ -336,34 +326,25 @@ in {
           description = "Level to log at. (debug, info, warning, error, critical)";
           example = "debug";
           default = "debug";
-          type = lib.types.str // {
-            check = (x: builtins.elem x log_levels);
-          };
+          type = lib.types.enum log_levels;
         };
         to_file_level = lib.mkOption {
           description = "Level to log at when using files. (debug, info, warning, error, critical)";
           example = "debug";
           default = "debug";
-          type = lib.types.str // {
-            check = (x: builtins.elem x log_levels);
-          };
+          type = lib.types.enum log_levels;
         };
         to_stdout_level = lib.mkOption {
           description = "Level to log at when using stdout. (debug, info, warning, error, critical)";
           example = "debug";
           default = "debug";
-          type = lib.types.str // {
-            check = (x: builtins.elem x log_levels);
-          };
+          type = lib.types.enum log_levels;
         };
         to_syslog_level = lib.mkOption {
           description = "Level to log at when using syslog. (debug, info, warning, error, critical)";
           example = "debug";
           default = "debug";
-          type = lib.types.str // {
-            check = (x: builtins.elem x log_levels);
-          };
-
+          type = lib.types.enum log_levels;
         };
         format = lib.mkOption {
           description = "Format string to use when logging.";
@@ -404,18 +385,28 @@ in {
       # after = [
       # ];
       # inherit environment;
-      path = sbws_path;
+      path = [ pkgs.sbws ];
       serviceConfig = {
         Type = "oneshot";
-        # WorkingDirectory = pkgs.weblate;
+        # ExecStartPre = ''
+        #   sleep 10
+        #   chmod g+rx "${cfg.paths.sbws_home}"
+        # '';
+        ExecBefore = ''
+        mkdir -p ${cfg.paths.sbws_home}
+        chmod 750 ${cfg.paths.sbws_home}
+        chown sbws:sbws ${cfg.paths.sbws_home}
+        '';
+        # use environment.src
+        ExecStart = ''
+        ${pkgs.sbws}/bin/sbws -c /etc/sbws.ini generate
+        '';
+
+        WorkingDirectory = pkgs.sbws;
         StateDirectory = "sbws";
+        RuntimeDirectory = "sbws";
         User = "sbws";
         Group = "sbws";
-        PreStart = ''
-          sleep 10
-          chmod g+rx "${cfg.paths.sbws_home}"
-        '';
-        ExecStart = "${pkgs.sbws}/bin/sbws -c /etc/sbws.ini generate"; # use environment.src
       };
     };
 
@@ -430,17 +421,15 @@ in {
       wantedBy = [
         "multi-user.target"
       ];
-      # after = [
-      # ];
-      # inherit environment;
-      path = sbws_path;
+      path = [ pkgs.sbws ];
       serviceConfig = {
         Type = "oneshot";
-        # WorkingDirectory = pkgs.weblate;
+        ExecStart = "${pkgs.sbws}/bin/sbws -c /etc/sbws.ini cleanup"; # use environment.src
+        WorkingDirectory = pkgs.sbws;
         StateDirectory = "sbws";
+        RuntimeDirectory = "sbws";
         User = "sbws";
         Group = "sbws";
-        ExecStart = "${pkgs.sbws}/bin/sbws -c /etc/sbws.ini cleanup"; # use environment.src
       };
     };
 
@@ -450,10 +439,12 @@ in {
       timerConfig.OnCalendar = [ "*-*-* 12:35:00" ];
     };
 
+    users.groups.sbws = {};
+    
     users.users.sbws = {
       isSystemUser = true;
       group = "sbws";
-      packages = [ ] ++ sbws_path;
+      packages = [ pkgs.sbws ];
     };
   };
 }

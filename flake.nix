@@ -56,7 +56,7 @@
 
         default = sbws;
       };
-
+      
       pkgsForSystem = system: import nixpkgs {
         # if you have additional overlays, you may add them here
         overlays = [
@@ -73,7 +73,7 @@
         default = legacyPackages.default;
         sbws = legacyPackages.sbws;
       };
-
+      
       # Default shell
       devShells.default = legacyPackages.mkShell {
         buildInputs = [
@@ -87,14 +87,14 @@
       };
       
       nixosModules.sbws = import ./module.nix;
-      
+
       nixosConfigurations.sbws = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [ ({ pkgs, lib, packages, ... }: {
           imports = [ self.nixosModules.sbws ];
           boot.isContainer = true;
 
-          networking.useDHCP = false;
+          networking.useDHCP = true;
           networking.hostName = "sbws";
           time.timeZone = "Etc/UTC";
           system.stateVersion = "22.05";

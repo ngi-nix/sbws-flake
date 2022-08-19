@@ -1,7 +1,6 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.services.sbws;
-  # packages = self.packages.${pkgs.system};
   
   config_file = pkgs.writeText "sbws.ini" (lib.generators.toINI {} ({
     general = {
@@ -11,7 +10,15 @@ let
       reset_bw_ipv4_changes = if cfg.general.reset_bw_ipv4_changes then "on" else "off";
     };
     
-    paths = lib.mapAttrs (_: value: value) cfg.paths;
+    paths = {
+      sbws_home = cfg.paths.sbws_home;
+      datadir = cfg.paths.sbws_home + "/" + cfg.paths.datadir;
+      v3bw_dname = cfg.paths.sbws_home + "/" + cfg.paths.v3bw_dname;
+      v3bw_fname = cfg.paths.sbws_home + "/" + cfg.paths.v3bw_dname + "/" + cfg.paths.v3bw_fname + ".v3bw";
+      state_fname = cfg.paths.sbws_home + "/" + cfg.paths.state_fname;
+      log_dname = cfg.paths.sbws_home + "/" + cfg.paths.log_dname;
+    };
+    
     scanner = lib.mapAttrs (_: value: value) cfg.scanner;
     cleanup = lib.mapAttrs (_: value: value) cfg.cleanup;
     relayprioritizer = {
@@ -50,11 +57,6 @@ in {
   options = {
     services.sbws = {
       enable = lib.mkEnableOption "sbws service";
-      # config_file = lib.mkOption {
-      #     description = "Location of this ini file.";
-      #     default = "~/.sbws/config.ini";
-      #     type = lib.types.str;
-      # };
       # --- General ---
       general = {
         data_period = lib.mkOption {
@@ -91,15 +93,15 @@ in {
 
         datadir = lib.mkOption {
           description = "Directory where sbws stores temporal bandwidth results files.";
-          example = "/var/lib/sbws/datadir";
-          default = "/var/lib/sbws/datadir";
+          example = "datadir";
+          default = "datadir";
           type = lib.types.str;
         };
 
         v3bw_dname = lib.mkOption {
           description = "Directory where sbws stores the bandwidth list files. These are the files to be read by the Tor Directory Authorities.";
-          example = "/var/lib/sbws/v3bw";
-          default = "/var/lib/sbws/v3bw";
+          example = "v3bw";
+          default = "v3bw";
           type = lib.types.str;
         };
 
@@ -112,15 +114,15 @@ in {
         
         state_fname = lib.mkOption {
           description = "File path to store the timestamp when the scanner was last started.";
-          example = "/var/lib/sbws/state.dat";
-          default = "/var/lib/sbws/state.dat";
+          example = "state.dat";
+          default = "state.dat";
           type = lib.types.str;
         };
 
         log_dname = lib.mkOption {
           description = "Directory where to store log files when logging to files is enabled.";
-          example = "/var/lib/sbws/log";
-          default = "/var/lib/sbws/log";
+          example = "log";
+          default = "log";
           type = lib.types.str;
         };
       };
@@ -394,8 +396,8 @@ in {
         # '';
         ExecBefore = ''
         mkdir -p ${cfg.paths.sbws_home}
-        chmod 750 ${cfg.paths.sbws_home}
-        chown sbws:sbws ${cfg.paths.sbws_home}
+        chmod -R 750 ${cfg.paths.sbws_home}
+        chown -R sbws:sbws ${cfg.paths.sbws_home}
         '';
         # use environment.src
         ExecStart = ''

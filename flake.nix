@@ -88,14 +88,17 @@
       
       nixosModules.sbws = import ./module.nix;
 
+      # --- Container for testing ---
       nixosConfigurations.sbws = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [ ({ pkgs, lib, packages, ... }: {
           imports = [ self.nixosModules.sbws ];
           boot.isContainer = true;
 
-          networking.useDHCP = true;
+          networking.useDHCP = false;
           networking.hostName = "sbws";
+          networking.firewall.enable = false;
+        
           time.timeZone = "Etc/UTC";
           system.stateVersion = "22.05";
 
@@ -107,7 +110,7 @@
             password = "12345";
           };
 
-          environment.systemPackages = [ self.packages.x86_64-linux.sbws ];
+          environment.systemPackages = [ self.packages.x86_64-linux.sbws pkgs.tor ];
           nixpkgs.overlays = [ local_overlay ];
           
           services.sbws = {

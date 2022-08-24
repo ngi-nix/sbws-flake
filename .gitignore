@@ -1,3 +1,4 @@
 sbws
 **/.tmp
 **/result
+.gitignore

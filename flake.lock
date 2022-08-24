@@ -1,22 +1,38 @@
 {
   "nodes": {
+    "flake-utils": {
+      "locked": {
+        "lastModified": 1656928814,
+        "narHash": "sha256-RIFfgBuKz6Hp89yRr7+NR5tzIAbn52h8vT6vXkYjZoM=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "7e2a3b3dfd9af950a856d66b0a7d01e3c18aa249",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1627892869,
-        "narHash": "sha256-Fg0KPi9oGTZ7Ju7rb8foq0GOZI3++ZaF6wf10ClMA58=",
+        "lastModified": 1659342832,
+        "narHash": "sha256-ePnxG4hacRd6oZMk+YeCSYMNUnHCe+qPLI0/+VaTu48=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "d4590d21006387dcb190c516724cb1e41c0f8fdf",
+        "rev": "e43cf1748462c81202a32b26294e9f8eefcc3462",
         "type": "github"
       },
       "original": {
         "id": "nixpkgs",
-        "ref": "nixos-21.05",
+        "ref": "nixos-22.05",
         "type": "indirect"
       }
     },
     "root": {
       "inputs": {
+        "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
         "sbws-src": "sbws-src"
       }
@@ -24,13 +40,17 @@
     "sbws-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-AlQfNeXTjX/4sCunH8c2IOapcfBWzch8b9UWc5btAJU=",
-        "type": "tarball",
-        "url": "https://gitlab.torproject.org/tpo/network-health/sbws/-/archive/v1.2.0/sbws-v1.2.0.tar.gz"
+        "lastModified": 1652949153,
+        "narHash": "sha256-Nyd7fbAr+MukJRcDaG3ED4uq2HAny5Xyz4oSXPtkMDM=",
+        "rev": "6ed14550bab4d60734c126630fb6cfa952207e74",
+        "revCount": 2074,
+        "type": "git",
+        "url": "https://gitlab.torproject.org/tpo/network-health/sbws.git"
       },
       "original": {
-        "type": "tarball",
-        "url": "https://gitlab.torproject.org/tpo/network-health/sbws/-/archive/v1.2.0/sbws-v1.2.0.tar.gz"
+        "rev": "6ed14550bab4d60734c126630fb6cfa952207e74",
+        "type": "git",
+        "url": "https://gitlab.torproject.org/tpo/network-health/sbws.git"
       }
     }
   },

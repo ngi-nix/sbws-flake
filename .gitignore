@@ -1,0 +1,4 @@
+sbws
+**/.tmp
+**/result
+.gitignore
